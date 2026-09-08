@@ -102,6 +102,17 @@ TENANT_TABLES = [
     "reconciliation_matchnote",
 ]
 
+# Tables that carry an org column but are deliberately outside the boundary.
+# Every entry needs a reason, because the default has to be "protected" for
+# the boundary to mean anything.
+#
+#   tenancy_orgmembership - this is how a request finds out which org it
+#   belongs to. Putting it behind a policy keyed on the current org would be
+#   circular: no context, no membership row, no way to establish context. It
+#   holds no reconciliation data, only a user-to-org pointer, and it is never
+#   exposed by the API.
+TENANT_BOUNDARY_EXEMPT = ["tenancy_orgmembership"]
+
 # Break-glass switch for the walkthrough only. When set, the RLS migration
 # refuses to install policies so you can watch the isolation tests fail.
 DISABLE_RLS = os.environ.get("DEALEROS_DISABLE_RLS", "") == "1"
