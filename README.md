@@ -38,7 +38,7 @@ and `make reset` drops and rebuilds the database from scratch.
 ### Test it
 
 ```bash
-make test                 # 174 tests
+make test                 # 191 tests
 make prove-isolation      # the tenant boundary suite, passing
 make prove-isolation-broken   # the same suite with the database protection removed
 make rls-status           # ask Postgres directly what the boundary is
@@ -121,11 +121,13 @@ $ POST /api/ask  {"question": "What is the total value at stake?"}
  3 exceptions have no absolute difference, so they are excluded from the
  total rather than counted as zero."
 
-  218,414.07  primary    REC-1027 (17,337.91), REC-1042 (112,837.06),
-                         REC-1064 (57,844.16), REC-1088 (30,394.94)
-           4  context    the same four rows
-           3  context    REC-1015, REC-1077, REC-1999
-           7  context    all seven
+218,414.07  primary    Total absolute difference
+                      REC-1027 (17,337.91), REC-1042 (112,837.06),
+                      REC-1064 (57,844.16), REC-1088 (30,394.94)
+         4  context    Exceptions included in the total -> the same four
+         3  context    Exceptions with no absolute difference
+                      REC-1015, REC-1077, REC-1999
+         7  context    Matching exceptions -> all seven
 ```
 
 `test_no_number_in_any_answer_is_left_without_rows_behind_it` enforces this
@@ -156,6 +158,14 @@ for a much wider range of phrasings. **Bring your own key — there is none in
 this repo.** The response always names which planner ran, and the UI shows the
 plan that was executed.
 
+Since you may well be the first person to run this *with* a key, the LLM call
+itself is tested rather than only stubbed: `test_llm_planner_transport.py`
+stands up a fake OpenAI-compatible server on localhost and checks the request
+shape, the response parsing, and that every failure mode — 401, 429, 500,
+unexpected JSON, unreachable host, prose instead of JSON — refuses rather than
+falling back to keywords. That last one matters: a user who set a key and got
+a keyword answer would reasonably believe a model had read their question.
+
 ---
 
 ## What I deliberately did not build
@@ -181,7 +191,7 @@ plan that was executed.
   120 rows that is correct; for a real export you would want change detection
   and an append-only exception history so that "this appeared on Tuesday" is
   answerable.
-- **Automated frontend tests.** The backend has 174; the frontend has none.
+- **Automated frontend tests.** The backend has 191; the frontend has none.
   With the API this thoroughly tested and the UI this thin, I judged the next
   hour was better spent on the isolation suite. I verified the UI by hand
   (both orgs, every filter, both refusal paths).
@@ -229,7 +239,8 @@ the real CSVs, and read as a specification while doing it.
 | `test_engine_edge_cases.py` | 48 | normalisation, and the classes the CSVs do not contain |
 | `test_reconciliation_golden.py` | 16 | the exact expected output for the supplied data |
 | `test_api.py` | 21 | auth, the list, filters, detail, idempotent ingest |
-| `test_grounded_answers.py` | 68 | citations, refusals, and hostile planner output |
+| `test_grounded_answers.py` | 69 | citations, refusals, and hostile planner output |
+| `test_llm_planner_transport.py` | 16 | the LLM call itself, against a fake OpenAI server on localhost |
 
 ---
 

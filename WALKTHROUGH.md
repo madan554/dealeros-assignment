@@ -298,10 +298,14 @@ those is as much a claim about the data as the money is. So each gets its own
 figure with its own rows, marked `role: "context"`:
 
 ```
-  218,414.07  primary    REC-1027, REC-1042, REC-1064, REC-1088 (with amounts)
-           4  context    the same four rows
-           3  context    REC-1015, REC-1077, REC-1999
-           7  context    all seven
+218,414.07  primary    Total absolute difference
+                      REC-1027, REC-1042, REC-1064, REC-1088 (with amounts)
+         4  context    Exceptions included in the total
+                      the same four rows
+         3  context    Exceptions with no absolute difference
+                      REC-1015, REC-1077, REC-1999
+         7  context    Matching exceptions
+                      all seven
 ```
 
 `test_no_number_in_any_answer_is_left_without_rows_behind_it` pulls every
@@ -400,5 +404,5 @@ make test
 ```
 
 ```
-174 passed
+191 passed
 ```

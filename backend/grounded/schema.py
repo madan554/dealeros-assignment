@@ -6,6 +6,13 @@ otherwise) is allowed to emit references to these names and nothing else, and
 endpoint hard to talk into lying: a question that needs a field which is not
 in this table cannot be turned into a query at all, so the only available
 behaviour is refusal.
+
+Field descriptions give *format* examples (``REC-0000``) rather than examples
+taken from the data. The prompt is the one place a real identifier could ride
+along to a third-party model without belonging to the caller: `REC-1015` is
+an ORG-A record, and it was in this file until a test asserted that nothing
+resembling a row is ever sent. Allowed *values* still reach the model, but
+those come from ``vocabulary()``, which is built per caller.
 """
 from dataclasses import dataclass
 
@@ -40,28 +47,28 @@ FIELDS = {
             "location_id",
             "enum",
             TEXT_OPS,
-            "The location the exception belongs to, e.g. LOC-101.",
+            "The location the exception belongs to. Format: LOC-000.",
             "location_id",
         ),
         FieldSpec(
             "location_name",
             "text",
             TEXT_OPS,
-            "Human name of the location, e.g. 'Location 101'.",
+            "Human name of the location. Format: 'Location 000'.",
             "location_name",
         ),
         FieldSpec(
             "category_code",
             "enum",
             TEXT_OPS,
-            "The System A category code, e.g. CAT-04.",
+            "The System A category code. Format: CAT-00.",
             "category_code",
         ),
         FieldSpec(
             "record_ref",
             "text",
             TEXT_OPS,
-            "The System A record id, e.g. REC-1015.",
+            "The System A record id. Format: REC-0000.",
             "record_ref",
         ),
         FieldSpec(
