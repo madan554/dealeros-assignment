@@ -248,15 +248,26 @@ the real CSVs, and read as a specification while doing it.
 
 ## How I worked with the agent
 
-I used Cursor with Claude throughout, and the division of labour was roughly:
-I decided what to build and how it should be structured, the agent wrote most
-of the characters. Where it saved the most time was volume with a clear
-specification — the reason code catalogue, the serializers, the React table,
-the parametrised normalisation tests. I read all of it; the parts I rewrote
-were mostly comments explaining *what* a line did rather than why it was
-that way.
+I used Cursor with Claude throughout: I decided what to build and how it
+should be structured, and the agent wrote most of the characters, saving the
+most time on volume against a clear specification — the reason code
+catalogue, the serializers, the React table, the parametrised normalisation
+tests. It was confidently wrong three times in ways that mattered, and all
+three were in the tenant boundary or the refusal path rather than in ordinary
+code: it wrote `DROP POLICY` as the way to "remove the database protection"
+(that makes Postgres default-*deny*, so the before/after demo proved
+nothing), it enabled row level security without `FORCE` (which reads
+correctly in `pg_policy` and does nothing, because Django owns the tables),
+and it wrote an org-name regex that silently missed "organisation B". I
+caught all three the same way — by writing the assertion in its strong form
+("the other org's rows appear", not "the result changes") and by checking the
+live Postgres catalog by hand rather than trusting a green suite. The lesson
+I would carry to the next task: an agent reliably produces code that passes
+the test it was asked to pass, so essentially all of the leverage is in
+whether I chose the strong assertion, and twice here the weak one would have
+been green and wrong.
 
-Three places it was confidently wrong, and how I caught them:
+The longer version of each, since this section is read closely:
 
 The first was the isolation test itself, which is uncomfortable given it is
 the highest-weighted thing here. The obvious way to write "remove the database
@@ -289,11 +300,16 @@ question. There are now table-driven tests for both directions, since that
 check is a regex and regexes are where this sort of thing quietly stops
 working.
 
-The general lesson, which cost me the most time: an agent is very good at
-producing code that passes the test it was asked to pass, so the leverage is
-almost entirely in whether the assertion is the *strong* form. Twice here the
-weak assertion would have been green and wrong. I also caught myself twice
-writing tests that encoded my assumptions rather than the requirement — I
-expected all three normalised references to belong to ORG-A, and REC-1070 is
-at LOC-202, which is ORG-B. The code was right and my test was wrong, which
-is the good version of that mistake.
+Two more worth admitting. I caught myself writing tests that encoded my
+assumptions rather than the requirement: I expected all three normalised
+references to belong to ORG-A, and REC-1070 is at LOC-202, which is ORG-B.
+The code was right and my test was wrong, which is the good version of that
+mistake. And the agent had left the LLM planner covered only by a stub, which
+I accepted for longer than I should have — the request-building and
+response-parsing code is exactly what a reviewer with an API key hits first,
+and a bug there surfaces as `PLANNER_UNAVAILABLE`, which reads as *your*
+network being down rather than as my bug. Writing that test against a fake
+local server immediately turned up a real leak: the field descriptions sent
+to the model used examples taken from the data (`e.g. REC-1015`), so an ORG-A
+record id was going to a third party regardless of who was asking. Row level
+security cannot help there, because the prompt is assembled in Python.
