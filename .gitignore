@@ -9,3 +9,5 @@ frontend/dist/
 .DS_Store
 DealerOS_Assignment_Dataset/
 DealerOS_Assignment_Senior_Full_Stack.docx
+frontend/tsconfig.tsbuildinfo
+frontend/*.tsbuildinfo

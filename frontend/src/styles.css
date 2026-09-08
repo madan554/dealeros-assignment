@@ -1,0 +1,352 @@
+/* Deliberately minimal. The brief says a plain table is the correct answer,
+   so this is legibility and density only: no theme, no component library. */
+
+:root {
+  --line: #d7d7d7;
+  --muted: #6b6b6b;
+  --bg-alt: #f6f6f6;
+  --accent: #14507d;
+  --bad: #a4262c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
+  color: #1b1b1b;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92em;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.negative {
+  color: var(--bad);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+button.link {
+  background: none;
+  border: 0;
+  color: var(--accent);
+  text-decoration: underline;
+  padding: 0 0.35rem;
+}
+
+input {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+/* --- login --------------------------------------------------------------- */
+
+.login {
+  max-width: 26rem;
+  margin: 4rem auto;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.login h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.login label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.login button[type="submit"] {
+  margin-top: 0.5rem;
+  padding: 0.45rem;
+}
+
+.demo-users {
+  margin-top: 1.5rem;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.demo-users th,
+.demo-users td {
+  border: 1px solid var(--line);
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+/* --- shell --------------------------------------------------------------- */
+
+.app {
+  padding: 1rem 1.25rem 4rem;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 0.8rem;
+}
+
+h2 {
+  font-size: 1.05rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+/* --- filters ------------------------------------------------------------- */
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.filter-label {
+  color: var(--muted);
+  min-width: 6.5rem;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.chip-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.chip.on .chip-count {
+  color: #cfe3f2;
+}
+
+.search {
+  min-width: 20rem;
+}
+
+.count {
+  margin: 0.8rem 0 0.4rem;
+}
+
+/* --- tables -------------------------------------------------------------- */
+
+.exceptions {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.exceptions th,
+.exceptions td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.exceptions thead th {
+  border-bottom: 2px solid #999;
+  white-space: nowrap;
+  background: var(--bg-alt);
+}
+
+.exceptions th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.exceptions td.number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.exceptions td.summary {
+  min-width: 22rem;
+  color: #333;
+}
+
+tr.row {
+  cursor: pointer;
+}
+
+tr.row:hover {
+  background: var(--bg-alt);
+}
+
+.empty {
+  padding: 1.5rem 0;
+  color: var(--muted);
+}
+
+/* --- expanded detail ----------------------------------------------------- */
+
+.detail-row td {
+  background: var(--bg-alt);
+}
+
+.detail-columns {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.what-to-do {
+  margin: 0 0 0.6rem;
+}
+
+.detail h4 {
+  margin: 0 0 0.3rem;
+}
+
+table.kv {
+  border-collapse: collapse;
+  margin-bottom: 0.8rem;
+}
+
+table.kv th,
+table.kv td {
+  padding: 0.1rem 0.6rem 0.1rem 0;
+  text-align: left;
+  font-weight: normal;
+  vertical-align: top;
+}
+
+table.kv th {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+pre {
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 0.5rem;
+  overflow-x: auto;
+  font-size: 0.85em;
+  margin: 0.4rem 0 0;
+}
+
+/* --- ask ----------------------------------------------------------------- */
+
+.ask form {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.ask form input {
+  flex: 1;
+  max-width: 44rem;
+}
+
+.suggestions {
+  margin: 0.4rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.6rem;
+  font-size: 0.9em;
+}
+
+.answer {
+  border-left: 3px solid var(--accent);
+  padding: 0.5rem 0.8rem;
+  margin-top: 0.8rem;
+  background: var(--bg-alt);
+  max-width: 60rem;
+}
+
+.answer.refused {
+  border-left-color: var(--bad);
+}
+
+.answer-text {
+  margin: 0 0 0.5rem;
+}
+
+.figures {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.figure-head {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.figure-label {
+  color: var(--muted);
+}
+
+.figure-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.citations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: baseline;
+}
+
+.citations code {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0 0.3rem;
+}
+
+.contribution {
+  color: var(--muted);
+}
+
+.not-errors {
+  max-width: 70rem;
+}
