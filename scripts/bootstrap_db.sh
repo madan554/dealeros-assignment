@@ -12,7 +12,8 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-if [ -f .env ]; then set -a; . ./.env; set +a; fi
+. ./scripts/load_env.sh
+load_env_defaults .env
 
 DB="${POSTGRES_DB:-dealeros}"
 APP_USER="${POSTGRES_USER:-dealeros_app}"

@@ -4,7 +4,8 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-if [ -f .env ]; then set -a; . ./.env; set +a; fi
+. ./scripts/load_env.sh
+load_env_defaults .env
 
 DB="${POSTGRES_DB:-dealeros}"
 ADMIN_DSN="${ADMIN_DSN:-postgres://${POSTGRES_HOST:-127.0.0.1}:${POSTGRES_PORT:-5432}/postgres}"
