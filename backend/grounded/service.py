@@ -28,8 +28,15 @@ from .executor import execute
 from .plan import CROSS_TENANT, Refusal, validate
 from .planner import build_planner
 
-_ORG_TOKEN = re.compile(r"\borg[\s\-_]?([a-z0-9]+)\b", re.IGNORECASE)
-_ORG_WORD = re.compile(r"\borganisation|\borganization", re.IGNORECASE)
+# Matches an org being *named*: ORG-B, "org b", "organisation B", "orgs 2".
+# The captured token is restricted to a single letter or a run of digits so
+# that "how many does my org have" does not read "have" as an org id, and
+# "cross the organisation boundary" does not read "boundary" as one. Anything
+# looser produced false refusals on in-scope questions.
+_ORG_REF = re.compile(
+    r"\borg(?:anisation|anization)?s?\b[\s\-_:']*(?:id\s*)?([a-z]|\d+)\b",
+    re.IGNORECASE,
+)
 _LOCATION_TOKEN = re.compile(r"\bloc[\s\-_]?(\d{2,})\b", re.IGNORECASE)
 _LOCATION_WORD = re.compile(r"\blocation\s+(\d{2,})\b", re.IGNORECASE)
 
@@ -92,10 +99,10 @@ def tenant_guard(question, org_id, vocab):
             return Refusal(CROSS_TENANT, CROSS_TENANT_MESSAGE.format(org_id=org_id))
 
     own_suffix = org_id.split("-")[-1].lower() if "-" in org_id else org_id.lower()
-    for match in _ORG_TOKEN.finditer(question):
+    for match in _ORG_REF.finditer(question):
         token = match.group(1).lower()
-        if token in {"anisation", "anization", "anisations", "anizations", "s"}:
-            continue  # part of the word "organisation", not an identifier
+        if token == "s":
+            continue  # the possessive in "org's", not an identifier
         if token != own_suffix and token != org_id.lower():
             return Refusal(CROSS_TENANT, CROSS_TENANT_MESSAGE.format(org_id=org_id))
 
