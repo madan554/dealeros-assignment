@@ -5,6 +5,7 @@ import {
   fetchLocations,
   fetchReasonCodes,
   fetchSummary,
+  isAbortError,
   loadSession,
   type ExceptionsResponse,
   type Filters,
@@ -15,6 +16,13 @@ import {
 import { AskPanel } from "./components/AskPanel";
 import { ExceptionsTable } from "./components/ExceptionsTable";
 import { Login } from "./components/Login";
+
+const EMPTY_FILTERS: Filters = {
+  reasonCodes: [],
+  locationIds: [],
+  search: "",
+  ordering: "record_ref",
+};
 
 /** The disagreements the reconciliation decided were not errors.
  *
@@ -68,43 +76,62 @@ export default function App() {
   const [summary, setSummary] = useState<Record<string, any> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState<Filters>({
-    reasonCodes: [],
-    locationIds: [],
-    search: "",
-    ordering: "record_ref",
-  });
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
 
   const token = session?.token ?? null;
 
   const signOut = useCallback(() => {
+    // Drop every org-scoped piece of state. Leaving Alice's location filter
+    // or in-flight responses around is how Bob would either see zero rows
+    // or, worse, briefly see Alice's exceptions including REC-1077.
     clearSession();
     setSession(null);
     setData(null);
     setSummary(null);
+    setReasonCodes([]);
+    setLocations([]);
+    setError(null);
+    setLoading(false);
+    setFilters(EMPTY_FILTERS);
   }, []);
 
   useEffect(() => {
     if (!token) return;
-    Promise.all([fetchReasonCodes(token), fetchLocations(token), fetchSummary(token)])
+    const controller = new AbortController();
+    Promise.all([
+      fetchReasonCodes(token, controller.signal),
+      fetchLocations(token, controller.signal),
+      fetchSummary(token, controller.signal),
+    ])
       .then(([codes, locs, sum]) => {
         setReasonCodes(codes);
         setLocations(locs);
         setSummary(sum);
       })
-      .catch((caught) => setError(caught instanceof Error ? caught.message : "Load failed"));
+      .catch((caught) => {
+        if (isAbortError(caught)) return;
+        setError(caught instanceof Error ? caught.message : "Load failed");
+      });
+    return () => controller.abort();
   }, [token]);
 
   useEffect(() => {
     if (!token) return;
+    const controller = new AbortController();
     setLoading(true);
-    fetchExceptions(token, filters)
+    fetchExceptions(token, filters, controller.signal)
       .then((body) => {
         setData(body);
         setError(null);
       })
-      .catch((caught) => setError(caught instanceof Error ? caught.message : "Load failed"))
-      .finally(() => setLoading(false));
+      .catch((caught) => {
+        if (isAbortError(caught)) return;
+        setError(caught instanceof Error ? caught.message : "Load failed");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
   }, [token, filters]);
 
   const visibleReasonCodes = useMemo(() => {
@@ -198,14 +225,7 @@ export default function App() {
           {filtered && (
             <button
               className="link"
-              onClick={() =>
-                setFilters({
-                  reasonCodes: [],
-                  locationIds: [],
-                  search: "",
-                  ordering: filters.ordering,
-                })
-              }
+              onClick={() => setFilters({ ...EMPTY_FILTERS, ordering: filters.ordering })}
             >
               clear filters
             </button>

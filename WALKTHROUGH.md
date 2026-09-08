@@ -96,7 +96,7 @@ make backend    # terminal 1
 make frontend   # terminal 2
 ```
 
-Sign in at http://localhost:5173 as **alice / demo-password**. Seven rows.
+Sign in at http://127.0.0.1:5173 as **alice / demo-password**. Seven rows.
 Note **REC-1077**, "Locations disagree":
 
 > System A puts REC-1077 at Location 102 but System B entry ENT/2026/4077 puts

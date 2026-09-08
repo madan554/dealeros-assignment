@@ -221,3 +221,45 @@ def test_ingest_is_idempotent(seeded, alice):
     assert {r["record_ref"] for r in before["results"]} == {
         r["record_ref"] for r in after["results"]
     }
+
+
+def test_switching_users_repeatedly_never_leaks_or_crashes(seeded, api_client):
+    """The QA path that failed with a 502: Alice, then Bob, then Alice again.
+
+    Auth itself was never the problem — the 502 was the Vite proxy talking to
+    a dead backend — but the switch must still leave each caller with exactly
+    their own rows and no cross-tenant residue in any payload.
+    """
+    for _ in range(5):
+        for username, org_id, count, forbidden in (
+            ("alice", "ORG-A", 7, None),
+            ("bob", "ORG-B", 5, "REC-1077"),
+        ):
+            login = api_client.post(
+                "/api/auth/login",
+                {"username": username, "password": "demo-password"},
+                format="json",
+            )
+            assert login.status_code == 200, login.content
+            body = login.json()
+            assert body["org_id"] == org_id
+            api_client.credentials(HTTP_AUTHORIZATION=f"Token {body['token']}")
+
+            exceptions = api_client.get("/api/exceptions").json()
+            summary = api_client.get("/api/summary").json()
+            locations = api_client.get("/api/locations").json()
+
+            assert exceptions["count"] == count
+            refs = {row["record_ref"] for row in exceptions["results"]}
+            assert summary["org_id"] == org_id
+            assert summary["exception_count"] == count
+            if forbidden:
+                assert forbidden not in refs
+                blob = repr(exceptions) + repr(summary) + repr(locations)
+                assert forbidden not in blob
+                assert "LOC-102" not in blob
+            else:
+                assert "REC-1077" in refs
+
+            api_client.credentials()
+

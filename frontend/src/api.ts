@@ -123,21 +123,40 @@ class ApiError extends Error {
 }
 
 async function request<T>(path: string, token: string | null, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Token ${token}` } : {}),
-      ...(init?.headers ?? {}),
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Token ${token}` } : {}),
+        ...(init?.headers ?? {}),
+      },
+    });
+  } catch (caught) {
+    // Vite's proxy turns a down backend into a 502. A direct connection
+    // refusal arrives here as TypeError. Either way the user needs to know
+    // the API is unreachable, not that their password is wrong.
+    if (caught instanceof DOMException && caught.name === "AbortError") {
+      throw caught;
+    }
+    throw new ApiError(
+      0,
+      "Cannot reach the API. Is `make backend` running on 127.0.0.1:8000?",
+    );
+  }
   if (!response.ok) {
     let detail = `Request failed (${response.status})`;
-    try {
-      const body = await response.json();
-      detail = body.detail ?? detail;
-    } catch {
-      // Response had no JSON body; the status is all we have to report.
+    if (response.status === 502 || response.status === 504) {
+      detail =
+        "Cannot reach the API (proxy 502). Is `make backend` running on 127.0.0.1:8000?";
+    } else {
+      try {
+        const body = await response.json();
+        detail = body.detail ?? detail;
+      } catch {
+        // Response had no JSON body; the status is all we have to report.
+      }
     }
     throw new ApiError(response.status, detail);
   }
@@ -151,6 +170,10 @@ export async function login(username: string, password: string): Promise<Session
   });
 }
 
+export function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
 export type Filters = {
   reasonCodes: string[];
   locationIds: string[];
@@ -158,36 +181,51 @@ export type Filters = {
   ordering: string;
 };
 
-export async function fetchExceptions(token: string, filters: Filters) {
+export async function fetchExceptions(
+  token: string,
+  filters: Filters,
+  signal?: AbortSignal,
+) {
   const params = new URLSearchParams();
   filters.reasonCodes.forEach((code) => params.append("reason_code", code));
   filters.locationIds.forEach((id) => params.append("location_id", id));
   if (filters.search.trim()) params.set("search", filters.search.trim());
   if (filters.ordering) params.set("ordering", filters.ordering);
-  return request<ExceptionsResponse>(`/api/exceptions?${params}`, token);
+  return request<ExceptionsResponse>(`/api/exceptions?${params}`, token, { signal });
 }
 
-export async function fetchExceptionDetail(token: string, id: number) {
-  return request<ExceptionDetail>(`/api/exceptions/${id}`, token);
+export async function fetchExceptionDetail(
+  token: string,
+  id: number,
+  signal?: AbortSignal,
+) {
+  return request<ExceptionDetail>(`/api/exceptions/${id}`, token, { signal });
 }
 
-export async function fetchReasonCodes(token: string) {
-  const body = await request<{ reason_codes: ReasonCode[] }>("/api/reason-codes", token);
+export async function fetchReasonCodes(token: string, signal?: AbortSignal) {
+  const body = await request<{ reason_codes: ReasonCode[] }>(
+    "/api/reason-codes",
+    token,
+    { signal },
+  );
   return body.reason_codes;
 }
 
-export async function fetchLocations(token: string) {
-  const body = await request<{ locations: Location[] }>("/api/locations", token);
+export async function fetchLocations(token: string, signal?: AbortSignal) {
+  const body = await request<{ locations: Location[] }>("/api/locations", token, {
+    signal,
+  });
   return body.locations;
 }
 
-export async function fetchSummary(token: string) {
-  return request<Record<string, any>>("/api/summary", token);
+export async function fetchSummary(token: string, signal?: AbortSignal) {
+  return request<Record<string, any>>("/api/summary", token, { signal });
 }
 
-export async function askQuestion(token: string, question: string) {
+export async function askQuestion(token: string, question: string, signal?: AbortSignal) {
   return request<AskResponse>("/api/ask", token, {
     method: "POST",
     body: JSON.stringify({ question }),
+    signal,
   });
 }

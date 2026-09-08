@@ -19,11 +19,13 @@ brew services start postgresql@18`).
 ```bash
 make setup                # venv, deps, database, role, migrate, seed, ingest, npm install
 make backend              # API on http://127.0.0.1:8000
-make frontend             # UI  on http://localhost:5173   (second terminal)
+make frontend             # UI  on http://127.0.0.1:5173   (second terminal)
 ```
 
-Then sign in at http://localhost:5173 as **alice / demo-password** (ORG-A, 7
-exceptions) or **bob / demo-password** (ORG-B, 5 exceptions).
+Then sign in at http://127.0.0.1:5173 as **alice / demo-password** (ORG-A, 7
+exceptions) or **bob / demo-password** (ORG-B, 5 exceptions). Use the
+`127.0.0.1` URL rather than `localhost` — both servers bind IPv4 only, so an
+IPv6 `localhost` can reach nothing and the Vite proxy reports that as a 502.
 
 `make setup` assumes it can reach Postgres as an admin role on
 `127.0.0.1:5432`. If your setup differs, point it somewhere else:
@@ -38,7 +40,7 @@ and `make reset` drops and rebuilds the database from scratch.
 ### Test it
 
 ```bash
-make test                 # 193 tests
+make test                 # 194 tests
 make prove-isolation      # the tenant boundary suite, passing
 make prove-isolation-broken   # the same suite with the database protection removed
 make rls-status           # ask Postgres directly what the boundary is
@@ -193,7 +195,7 @@ a keyword answer would reasonably believe a model had read their question.
   120 rows that is correct; for a real export you would want change detection
   and an append-only exception history so that "this appeared on Tuesday" is
   answerable.
-- **Automated frontend tests.** The backend has 193; the frontend has none.
+- **Automated frontend tests.** The backend has 194; the frontend has none.
   With the API this thoroughly tested and the UI this thin, I judged the next
   hour was better spent on the isolation suite. I verified the UI by hand
   (both orgs, every filter, both refusal paths).
@@ -240,7 +242,7 @@ the real CSVs, and read as a specification while doing it.
 | `test_tenant_isolation.py` | 22 | the boundary, attacked from every angle I could think of |
 | `test_engine_edge_cases.py` | 48 | normalisation, and the classes the CSVs do not contain |
 | `test_reconciliation_golden.py` | 17 | the exact expected output for the supplied data |
-| `test_api.py` | 21 | auth, the list, filters, detail, idempotent ingest |
+| `test_api.py` | 22 | auth, the list, filters, detail, idempotent ingest |
 | `test_grounded_answers.py` | 69 | citations, refusals, and hostile planner output |
 | `test_llm_planner_transport.py` | 16 | the LLM call itself, against a fake OpenAI server on localhost |
 

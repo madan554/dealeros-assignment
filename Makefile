@@ -49,7 +49,7 @@ setup: check-tools
 	cd frontend && npm install
 	@echo ""
 	@echo "Ready. Run 'make backend' and 'make frontend' in two terminals,"
-	@echo "then sign in at http://localhost:5173 as alice / demo-password."
+	@echo "then sign in at http://127.0.0.1:5173 as alice / demo-password."
 
 db:
 	./scripts/bootstrap_db.sh
@@ -64,10 +64,12 @@ ingest:
 	$(MANAGE) ingest
 
 backend:
-	$(MANAGE) runserver 8000
+	# Bind IPv4 explicitly so Vite's proxy (also 127.0.0.1) and the browser
+	# agree on one stack. Plain `localhost` is IPv6 on some macOS setups.
+	$(MANAGE) runserver 127.0.0.1:8000
 
 frontend:
-	cd frontend && npm run dev
+	cd frontend && npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 
 test:
 	cd backend && ../$(PY) -m pytest
