@@ -115,8 +115,10 @@ record. `test_the_cross_org_location_mismatch_is_visible_only_to_the_owning_org`
 checks all of that, including the free-text fields the UI actually renders.
 
 While you are in the UI, scroll to the bottom for the **Not errors** section:
-the five disagreements that were examined and left out of the list, with the
-reasoning for each.
+four disagreements Alice's org examined and left out of the list (REC-1034,
+REC-1055, REC-1064, REC-1112), with the reasoning for each. The fifth
+non-error in the dataset, REC-1070, belongs to ORG-B — sign in as bob to see
+it. The list is tenant-scoped the same way the exceptions are.
 
 ---
 
