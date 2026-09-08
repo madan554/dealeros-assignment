@@ -134,7 +134,7 @@ make prove-isolation
 21 passed
 ```
 
-Twenty-one tests. They attack the boundary the ways a leak actually happens
+Twenty-two tests. They attack the boundary the ways a leak actually happens
 rather than checking the happy path:
 
 - raw SQL that skips the ORM entirely
@@ -146,6 +146,8 @@ rather than checking the happy path:
 - inserts, updates and deletes across the boundary
 - the citations on each exception, which are a second surface with the same risk
 - the HTTP API with a real token
+- a global table with no org column, whose totals would otherwise leak as
+  arithmetic rather than as rows
 
 ### 3b. Remove the database protection
 
@@ -188,10 +190,13 @@ FAILED tests/test_tenant_isolation.py::test_forcing_is_what_makes_the_policy_app
 ```
 
 **Not one line of application code changed between 3a and 3b.** The only
-difference is whether Postgres has the policies. Sixteen of the twenty-one
+difference is whether Postgres has the policies. Seventeen of the twenty-two
 tests fail, including the API test — because there is no second line of
 defence in the view layer, which is the honest cost of putting the whole
-boundary in one place.
+boundary in one place. The new one among them,
+`test_summary_does_not_publish_global_ingest_stats`, fails for a slightly
+different reason: with the boundary gone the org-scoped counts *become* the
+global totals, so the smoking-gun numbers appear as ordinary fields.
 
 The five that still pass are the ones that do not depend on RLS: the role
 privilege check, the "every org-owning table is registered" check, the

@@ -199,16 +199,16 @@ def summary(request):
                 "explanations": {code: NOTE_CODES[code] for code in note_counts},
                 "notes": MatchNoteSerializer(notes, many=True).data,
             },
-            "last_ingest": (
-                {
-                    "started_at": run.started_at,
-                    "finished_at": run.finished_at,
-                    "stats": run.stats,
-                    "unattributable": run.unattributable,
-                }
-                if run
-                else None
-            ),
+            # When, and nothing else. IngestRun is the one table here that is
+            # deliberately global — one run covers every org — so its stats
+            # are cross-tenant totals: `exceptions: 12` tells a caller who
+            # can see 5 that somebody else has 7, and `unattributable` is an
+            # operator report about rows that belong to no org at all. Row
+            # level security cannot catch this, because the table genuinely
+            # has no org column to filter on. So the boundary here has to be
+            # "do not serialise it", and the counts a caller is entitled to
+            # are the org-scoped ones above.
+            "last_ingest": {"finished_at": run.finished_at} if run else None,
         }
     )
 

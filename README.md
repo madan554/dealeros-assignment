@@ -38,7 +38,7 @@ and `make reset` drops and rebuilds the database from scratch.
 ### Test it
 
 ```bash
-make test                 # 192 tests
+make test                 # 193 tests
 make prove-isolation      # the tenant boundary suite, passing
 make prove-isolation-broken   # the same suite with the database protection removed
 make rls-status           # ask Postgres directly what the boundary is
@@ -193,7 +193,7 @@ a keyword answer would reasonably believe a model had read their question.
   120 rows that is correct; for a real export you would want change detection
   and an append-only exception history so that "this appeared on Tuesday" is
   answerable.
-- **Automated frontend tests.** The backend has 192; the frontend has none.
+- **Automated frontend tests.** The backend has 193; the frontend has none.
   With the API this thoroughly tested and the UI this thin, I judged the next
   hour was better spent on the isolation suite. I verified the UI by hand
   (both orgs, every filter, both refusal paths).
@@ -237,7 +237,7 @@ the real CSVs, and read as a specification while doing it.
 
 | File | Count | What it is for |
 |---|---:|---|
-| `test_tenant_isolation.py` | 21 | the boundary, attacked from every angle I could think of |
+| `test_tenant_isolation.py` | 22 | the boundary, attacked from every angle I could think of |
 | `test_engine_edge_cases.py` | 48 | normalisation, and the classes the CSVs do not contain |
 | `test_reconciliation_golden.py` | 17 | the exact expected output for the supplied data |
 | `test_api.py` | 21 | auth, the list, filters, detail, idempotent ingest |
@@ -313,3 +313,11 @@ local server immediately turned up a real leak: the field descriptions sent
 to the model used examples taken from the data (`e.g. REC-1015`), so an ORG-A
 record id was going to a third party regardless of who was asking. Row level
 security cannot help there, because the prompt is assembled in Python.
+
+A fourth leak, found the same way — by treating the HTTP responses as an
+attack surface rather than trusting that RLS covers everything. `/api/summary`
+was serialising `IngestRun.stats`, and that table has no org column because
+one run covers every tenant. Bob, who can see 5 exceptions, was being told
+there are 12. That is ORG-A's count, derived without ever returning an ORG-A
+row. The fix is to publish only `finished_at`; the test asserts the global
+totals 12 / 120 / 121 never appear as values.

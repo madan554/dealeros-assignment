@@ -364,6 +364,67 @@ def test_an_unauthenticated_caller_gets_nothing(seeded, api_client):
     assert api_client.get("/api/exceptions").status_code in (401, 403)
 
 
+def test_summary_does_not_publish_global_ingest_stats(
+    seeded, reconciled_data, api_client, token_for
+):
+    """A count is not a row, and row level security does not police it.
+
+    Every table with an org column is covered by a policy, so the way a total
+    escapes is a table that legitimately has no org column. ``IngestRun`` is
+    exactly that: one run covers every tenant, so its stats are global by
+    construction. Serialising ``stats.exceptions: 12`` to a caller who can
+    see 5 hands them ORG-A's row count without ever returning an ORG-A row.
+    ``unattributable`` is the same class of leak — an operator report about
+    rows that belong to no org at all.
+
+    So the boundary here has to be "do not serialise it". The only ingest
+    fact a tenant is entitled to is *when* the last load finished.
+    """
+    from reconciliation.models import IngestRun
+
+    run = IngestRun.objects.first()
+    assert run and run.stats, "no ingest run to leak"
+    assert run.stats.get("exceptions") == 12
+    assert run.stats.get("system_a_records") == 120
+
+    for user, own_count in (("alice", 7), ("bob", 5)):
+        api_client.credentials(HTTP_AUTHORIZATION=f"Token {token_for(user)}")
+        body = api_client.get("/api/summary").json()
+
+        assert body["exception_count"] == own_count
+        assert body["last_ingest"] is not None
+        assert set(body["last_ingest"]) == {"finished_at"}, body["last_ingest"]
+
+        # The smoking-gun numbers: the all-org exception total, and the
+        # all-org row counts. Neither equals either org's own exception
+        # count, so a coincidence with a primary key cannot explain them.
+        values = _leaf_numbers(body)
+        assert 12 not in values, f"{user} saw the global exception total"
+        assert 120 not in values, f"{user} saw the global System A row count"
+        assert 121 not in values, f"{user} saw the global System B row count"
+
+
+def _leaf_numbers(payload):
+    """Integer values in a response, ignoring string keys and digit-y ids
+    that ride along as strings (``REC-1015`` etc.)."""
+    found = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, (list, tuple)):
+            for item in node:
+                walk(item)
+        elif isinstance(node, bool):
+            return
+        elif isinstance(node, int):
+            found.add(node)
+
+    walk(payload)
+    return found
+
+
 def test_query_parameters_cannot_be_used_to_reach_the_other_org(
     seeded, api_client, token_for
 ):
