@@ -138,10 +138,18 @@ def test_a_total_says_how_many_rows_had_no_amount_rather_than_treating_them_as_z
     assert len(figure["citations"]) < body["grounding"]["matched_rows"]
 
 
-def test_a_breakdown_produces_one_cited_figure_per_group(seeded, alice):
+def test_a_breakdown_labels_its_groups_in_english_not_in_reason_codes(seeded, alice):
+    """The brief asks for reason codes a non-engineer can act on without a
+    glossary, and a breakdown reading 'ADJUSTMENT_MISSING_IN_SYSTEM_B: 2'
+    needs one. The raw code still rides along on each citation."""
     body = ask(alice, "Give me a breakdown by reason code")
     labels = {figure["label"] for figure in body["figures"]}
-    assert "ADJUSTMENT_MISSING_IN_SYSTEM_B" in labels
+    assert "System B is missing the adjustment" in labels
+    assert not any("_IN_SYSTEM_B" in label for label in labels)
+    assert "System B is missing the adjustment" in body["answer"]
+    codes = {c["reason_code"] for f in body["figures"] for c in f["citations"]}
+    assert "ADJUSTMENT_MISSING_IN_SYSTEM_B" in codes
+
     total = sum(figure["value"] for figure in body["figures"])
     assert total == 7
     for figure in body["figures"]:

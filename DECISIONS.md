@@ -94,35 +94,31 @@ disagreement. The exception is about the money, not the punctuation.
 
 ---
 
-### 6. `ADJUSTMENT_MISSING_IN_SYSTEM_B` is its own reason code, not a value mismatch
+### 6. Split a reason code when it names a cause; suppress one when it adds noise
 
-**Rejected:** one `AMOUNT_MISMATCH` code covering every case where the numbers
-differ.
+**Rejected:** one code per kind of field difference — amounts, dates,
+locations — applied uniformly.
 
-**Why:** three records (REC-1003, REC-1027, REC-1088) differ from System A by
-*exactly* the adjustment, because System B recorded `base_value` where it
-should have recorded `total_value`. "The amounts disagree" is true and sends
-someone to check three records one at a time. "System B recorded the amount
-before the adjustment" tells them one export dropped a column, which is one
-fix instead of three investigations. REC-1064 is the control: its amount
-matches neither the base nor the total, so it stays a plain mismatch.
+**Why:** the list is only worth reading if every row earns a human's
+attention, and that cuts both ways.
 
----
+Splitting: three records (REC-1003, REC-1027, REC-1088) differ from System A
+by *exactly* the adjustment, because System B recorded `base_value` where it
+should have recorded `total_value`. `AMOUNT_MISMATCH` would be true and would
+send someone to check three records one at a time.
+`ADJUSTMENT_MISSING_IN_SYSTEM_B` tells them one export dropped a column: one
+fix, not three investigations. REC-1064 is the control — its amount matches
+neither the base nor the total, so it stays a plain mismatch.
 
-### 7. A voided record with a live System B entry reports the void and nothing else
-
-**Rejected:** reporting every disagreement found on the record.
-
-**Why:** REC-1019 is voided in System A while System B still holds an entry.
-Once that is true, the amount and the date are not worth a reader's time —
-they describe an entry that should not exist. Piling three rows onto one
-record pushes the actionable one down the list. The inverse rule falls out of
-the same reasoning: a voided record with *no* System B entry is the systems
-working correctly, so it is a note rather than a gap.
+Suppressing: REC-1019 is voided in System A while System B still holds an
+entry. Once that is true, the amount and the date describe an entry that
+should not exist, and three rows on one record push the actionable one down
+the list. Same reasoning inverted, a voided record with *no* System B entry is
+the systems working correctly, so it is a note rather than a gap.
 
 ---
 
-### 8. The language model writes a query plan; it never sees data and never produces a number
+### 7. The language model writes a query plan; it never sees data and never produces a number
 
 **Rejected:** giving a model the exception rows and asking it to answer, with
 a prompt instructing it to cite identifiers.
@@ -141,7 +137,7 @@ neither reaches the response.
 
 ---
 
-### 9. A question about another org is refused, not answered with zero
+### 8. A question about another org is refused, not answered with zero
 
 **Rejected:** letting row level security handle it, which would return no rows
 and answer "0 exceptions".
@@ -156,7 +152,7 @@ first version of the guard let "organisation B" through.
 
 ---
 
-### 10. The deterministic keyword planner is the default; the LLM is opt-in
+### 9. The deterministic keyword planner is the default; the LLM is opt-in
 
 **Rejected:** requiring an API key, or silently falling back to keywords when
 the model is unreachable.
@@ -172,7 +168,7 @@ which planner ran.
 
 ---
 
-### 11. One exception row per (record, reason), not per record
+### 10. One exception row per (record, reason), not per record
 
 **Rejected:** one row per record with a list of problems.
 

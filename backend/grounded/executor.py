@@ -15,6 +15,7 @@ from django.db.models import Avg, Count, Sum
 from django.db.models.functions import Abs, TruncMonth
 
 from reconciliation.models import Exception as ReconciliationException
+from reconciliation.reason_codes import REASON_CODES_BY_CODE
 
 from . import schema
 
@@ -230,8 +231,14 @@ def execute(plan):
 
 
 def _group_label(group, key):
+    """Group headings are user-facing, so a reason code becomes its plain
+    English label. The raw code still travels on every citation for anyone
+    who wants to filter on it."""
     if key in (None, ""):
         return "not set"
     if group == "event_month":
         return key.strftime("%B %Y")
+    if group == "reason_code":
+        reason = REASON_CODES_BY_CODE.get(key)
+        return reason.label if reason else str(key)
     return str(key)

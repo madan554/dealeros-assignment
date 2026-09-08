@@ -247,6 +247,23 @@ ask() { curl -s -X POST http://127.0.0.1:8000/api/ask \
   -d "{\"question\": \"$1\"}" | python3 -m json.tool; }
 ```
 
+### It answers in English, not in reason codes
+
+```bash
+ask "Give me a breakdown by reason code"
+```
+
+```
+"7 exceptions, by reason code — System B is missing the adjustment: 2;
+ Amounts disagree: 1; Recorded more than once in System B: 1; Locations
+ disagree: 1; Missing from System B: 1; System B entry for an unknown
+ record: 1."
+```
+
+Each of those six figures carries the record refs behind it. The raw
+`reason_code` still travels on every citation for anyone who wants to filter
+on it, but nothing a reader sees needs a glossary.
+
 ### It cites its rows
 
 ```bash
