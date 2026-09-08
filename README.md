@@ -106,9 +106,13 @@ click-to-expand. It is not pretty and that was on purpose.
 model's only job is to translate it into a JSON query plan naming fields from
 a fixed schema; the plan is validated field by field against a vocabulary
 built from the caller's own org; Postgres computes every figure; and the
-answer sentence is assembled from templates. Every figure carries the
-identifiers of the rows behind it, and aggregates carry each row's own
-contribution so the total can be re-added by hand.
+answer sentence is assembled from templates.
+
+*Every* number in the answer carries its rows, not just the headline one. A
+sentence like "the total across 4 of the 7 exceptions" makes three claims
+about the data, so the row counts get figures of their own (marked
+`role: "context"`) rather than being uncited prose. Aggregates also carry each
+row's own contribution, so the total can be re-added by hand.
 
 ```
 $ POST /api/ask  {"question": "What is the total value at stake?"}
@@ -117,9 +121,16 @@ $ POST /api/ask  {"question": "What is the total value at stake?"}
  3 exceptions have no absolute difference, so they are excluded from the
  total rather than counted as zero."
 
-figures[0] = 218414.07  cited from REC-1027 (17337.91), REC-1042 (112837.06),
-                                  REC-1064 (57844.16), REC-1088 (30394.94)
+  218,414.07  primary    REC-1027 (17,337.91), REC-1042 (112,837.06),
+                         REC-1064 (57,844.16), REC-1088 (30,394.94)
+           4  context    the same four rows
+           3  context    REC-1015, REC-1077, REC-1999
+           7  context    all seven
 ```
+
+`test_no_number_in_any_answer_is_left_without_rows_behind_it` enforces this
+by pulling every number out of the answer sentence and checking each one
+against the figures.
 
 The refusal path was the part I spent the time on:
 

@@ -189,11 +189,11 @@ def narrate(plan, execution):
         return sentence
 
     if plan.intent in {"sum", "average"}:
+        word = "total" if plan.intent == "sum" else "average"
         if count == 0:
-            return f"No exceptions{where}, so there is nothing to total."
+            return f"No exceptions{where}, so there is nothing to {word}."
         figure = execution.figures[0]
         label = schema.METRIC_LABELS[plan.metric]
-        word = "total" if plan.intent == "sum" else "average"
         contributing = count - execution.metric_null_count
         sentence = (
             f"The {word} {label} across {contributing} of the {count} "
@@ -205,7 +205,7 @@ def narrate(plan, execution):
                 f" {execution.metric_null_count} "
                 f"{'exception has' if execution.metric_null_count == 1 else 'exceptions have'} "
                 f"no {label}, so {'it is' if execution.metric_null_count == 1 else 'they are'} "
-                "excluded from the total rather than counted as zero."
+                f"excluded from the {word} rather than counted as zero."
             )
         return sentence
 
@@ -225,11 +225,12 @@ def narrate(plan, execution):
     label = schema.GROUP_LABELS.get(plan.group_by, plan.group_by)
     if count == 0:
         return f"No exceptions{where}, so there is nothing to break down by {label}."
+    groups = [f for f in execution.figures if f.role == "breakdown"]
     if plan.intent == "group_count":
-        parts = [f"{f.label}: {f.value}" for f in execution.figures]
+        parts = [f"{f.label}: {f.value}" for f in groups]
         lead = f"{count} {'exception' if count == 1 else 'exceptions'}{where}"
         return f"{lead}, by {label} — {'; '.join(parts)}."
-    parts = [f"{f.label}: {_money(f.value)}" for f in execution.figures]
+    parts = [f"{f.label}: {_money(f.value)}" for f in groups]
     metric_label = schema.METRIC_LABELS[plan.metric]
     return f"{metric_label.capitalize()} by {label}{where} — {'; '.join(parts)}."
 

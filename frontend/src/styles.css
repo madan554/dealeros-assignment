@@ -350,3 +350,11 @@ pre {
 .not-errors {
   max-width: 70rem;
 }
+
+.figures li.context .figure-value {
+  font-weight: 500;
+}
+
+.figures li.context .figure-label {
+  font-size: 0.95em;
+}

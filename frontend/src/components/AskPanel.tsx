@@ -13,11 +13,11 @@ const SUGGESTIONS = [
   "How many exceptions does ORG-B have?",
 ];
 
-function Figures({ response }: { response: AskResponse }) {
+function Figures({ figures }: { figures: AskResponse["figures"] }) {
   return (
     <ul className="figures">
-      {response.figures.map((figure, index) => (
-        <li key={index}>
+      {figures.map((figure, index) => (
+        <li key={index} className={figure.role === "context" ? "context" : undefined}>
           <div className="figure-head">
             <span className="figure-label">{figure.label}</span>
             <span className="figure-value">
@@ -108,7 +108,20 @@ export function AskPanel({ token, orgId }: { token: string; orgId: string }) {
           {response.answered ? (
             <>
               <p className="answer-text">{response.answer}</p>
-              <Figures response={response} />
+              <Figures
+                figures={response.figures.filter((figure) => figure.role !== "context")}
+              />
+              {/* Row counts the sentence mentions in passing. They carry
+                  citations too, so they are shown rather than dropped, but
+                  they are not what was asked for. */}
+              {response.figures.some((figure) => figure.role === "context") && (
+                <details>
+                  <summary>Rows behind the counts in that sentence</summary>
+                  <Figures
+                    figures={response.figures.filter((figure) => figure.role === "context")}
+                  />
+                </details>
+              )}
             </>
           ) : (
             <>

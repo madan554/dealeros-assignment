@@ -79,6 +79,8 @@ export type Figure = {
   label: string;
   value: number | string;
   unit: string;
+  /** "primary" | "breakdown" | "context" — see grounded/executor.py */
+  role: string;
   citations: Citation[];
   citation_note: string;
 };

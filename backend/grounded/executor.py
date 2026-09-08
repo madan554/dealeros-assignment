@@ -29,6 +29,15 @@ class Figure:
     unit: str  # "exceptions" or "currency"
     citations: list = field(default_factory=list)
     citation_note: str = ""
+    # "primary"   the number the question asked for
+    # "breakdown" one group of a grouped answer
+    # "context"   a row count the answer sentence mentions in passing
+    #
+    # The roles exist because the brief requires *every* number in the answer
+    # to carry its rows, including the ones that only appear as context, like
+    # "4 of the 7 exceptions". Without this they would be prose with no
+    # citations behind them.
+    role: str = "primary"
 
     def as_dict(self):
         value = self.value
@@ -38,6 +47,7 @@ class Figure:
             "label": self.label,
             "value": value,
             "unit": self.unit,
+            "role": self.role,
             "citations": self.citations,
             "citation_note": self.citation_note,
         }
@@ -146,16 +156,43 @@ def execute(plan):
             aggregate = Decimal("0.00")
         aggregate = Decimal(aggregate).quantize(Decimal("0.01"))
         citations, note = _citations_for(contributing, metric=metric)
+        label = schema.METRIC_LABELS[metric]
         execution.figures = [
             Figure(
-                label=f"{'Total' if plan.intent == 'sum' else 'Average'} "
-                f"{schema.METRIC_LABELS[metric]}",
+                label=f"{'Total' if plan.intent == 'sum' else 'Average'} {label}",
                 value=aggregate,
                 unit="currency",
                 citations=citations,
                 citation_note=note,
-            )
+            ),
+            Figure(
+                label=f"Exceptions included in the {'total' if plan.intent == 'sum' else 'average'}",
+                value=len(contributing),
+                unit="exceptions",
+                citations=[_cite(row) for row in contributing[:MAX_CITATIONS]],
+                role="context",
+            ),
         ]
+        if execution.metric_null_count:
+            blanks = [r for r in all_rows if getattr(r, metric) is None]
+            execution.figures.append(
+                Figure(
+                    label=f"Exceptions with no {label}",
+                    value=len(blanks),
+                    unit="exceptions",
+                    citations=[_cite(row) for row in blanks[:MAX_CITATIONS]],
+                    role="context",
+                )
+            )
+        execution.figures.append(
+            Figure(
+                label="Matching exceptions",
+                value=len(all_rows),
+                unit="exceptions",
+                citations=[_cite(row) for row in all_rows[:MAX_CITATIONS]],
+                role="context",
+            )
+        )
         return execution
 
     if plan.intent in {"max_by", "min_by"}:
@@ -223,10 +260,22 @@ def execute(plan):
                 unit="exceptions" if plan.intent == "group_count" else "currency",
                 citations=citations,
                 citation_note=note,
+                role="breakdown",
             )
         )
-    execution.figures = figures
     execution.groups = [f.label for f in figures]
+    # The answer sentence leads with the overall count, so it gets a figure of
+    # its own rather than being an uncited number in prose.
+    figures.append(
+        Figure(
+            label="Matching exceptions",
+            value=len(all_rows),
+            unit="exceptions",
+            citations=[_cite(row) for row in all_rows[:MAX_CITATIONS]],
+            role="context",
+        )
+    )
+    execution.figures = figures
     return execution
 
 

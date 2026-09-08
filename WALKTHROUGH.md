@@ -276,8 +276,7 @@ ask "What is the total value at stake?"
  total rather than counted as zero."
 ```
 
-Every figure carries the rows behind it, and for a total, each row's own
-contribution, so it can be re-added by hand:
+The total carries each row's own contribution, so it can be re-added by hand:
 
 ```
 REC-1027  17,337.91
@@ -293,6 +292,23 @@ difference at all — REC-1015 is missing from System B entirely, so there is no
 System B amount to compare. Counting those as zero would make the total look
 complete when it is not, and silently dropping them would make the row count
 wrong. Saying which rows were excluded and why is the only honest option.
+
+That sentence also states three *other* numbers — 4, 3 and 7 — and each of
+those is as much a claim about the data as the money is. So each gets its own
+figure with its own rows, marked `role: "context"`:
+
+```
+  218,414.07  primary    REC-1027, REC-1042, REC-1064, REC-1088 (with amounts)
+           4  context    the same four rows
+           3  context    REC-1015, REC-1077, REC-1999
+           7  context    all seven
+```
+
+`test_no_number_in_any_answer_is_left_without_rows_behind_it` pulls every
+number out of the answer sentence, discards identifiers and group headings,
+and asserts what remains all corresponds to a figure. The first version of
+this endpoint cited the headline figure and left the row counts as prose,
+which is not what the brief asks for.
 
 ### It refuses when the data cannot answer
 

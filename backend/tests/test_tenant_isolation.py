@@ -22,7 +22,6 @@ something incidental.
 Running the whole suite with ``DEALEROS_DISABLE_RLS=1`` builds the database
 without policies and fails most of this file. See WALKTHROUGH.md.
 """
-import psycopg
 import pytest
 from django.db import connection, transaction
 

@@ -145,7 +145,21 @@ class DeterministicPlanner:
 
         wants_money = any(
             word in text
-            for word in ("total", "sum", "how much", "value", "amount of money", "money")
+            for word in (
+                "total",
+                "sum",
+                "how much",
+                "value",
+                "amount of money",
+                "money",
+                # "the average difference" and "the gap" are asking for a
+                # number over the amounts too, without using the word total.
+                "average",
+                "mean",
+                "difference",
+                "gap",
+                "shortfall",
+            )
         )
         wants_breakdown = any(
             phrase in text

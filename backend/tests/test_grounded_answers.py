@@ -8,6 +8,7 @@ confused model might return, which is the only way to test the LLM path
 without making the suite depend on a remote service.
 """
 import json
+import re
 
 import pytest
 
@@ -76,19 +77,25 @@ def test_a_count_is_answered_and_cites_every_row_it_counted(seeded, alice):
     assert "7" in body["answer"]
 
 
+ANSWERABLE_QUESTIONS = [
+    "How many exceptions are there?",
+    "How many exceptions are missing from system b?",
+    "Give me a breakdown by reason code",
+    "Break the exceptions down by location",
+    "What is the total value at stake?",
+    "What is the average difference?",
+    "What is the biggest difference?",
+    "What is the smallest difference?",
+    "List the duplicate exceptions",
+    "How many exceptions cross the organisation boundary?",
+    "Which month has the most exceptions?",
+]
+
+
 def test_every_figure_in_every_answer_carries_citations(seeded, alice):
     """The rule from the brief, checked across the whole supported surface
     rather than on one endpoint response."""
-    questions = [
-        "How many exceptions are there?",
-        "How many exceptions are missing from system b?",
-        "Give me a breakdown by reason code",
-        "Break the exceptions down by location",
-        "What is the total value at stake?",
-        "What is the biggest difference?",
-        "List the duplicate exceptions",
-    ]
-    for question in questions:
+    for question in ANSWERABLE_QUESTIONS:
         body = ask(alice, question)
         assert body["answered"] is True, f"{question} -> {body['refusal']}"
         assert body["figures"], f"{question} produced no figures"
@@ -97,6 +104,52 @@ def test_every_figure_in_every_answer_carries_citations(seeded, alice):
             for citation in figure["citations"]:
                 assert citation["record_ref"]
                 assert citation["exception_id"]
+
+
+# Identifiers contain digits that are not claims about the data.
+_IDENTIFIER = re.compile(r"\b(?:REC|LOC|CAT)-\d+|ENT/\d+/\d+|\b\d{4}-\d{2}-\d{2}\b")
+_NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
+
+
+def _numbers_in(sentence, labels=()):
+    """Numbers the answer is *claiming*, ignoring identifiers and the group
+    labels the sentence echoes (a heading like 'March 2026' is a name, not a
+    figure)."""
+    for label in sorted(labels, key=len, reverse=True):
+        sentence = sentence.replace(label, "")
+    return {
+        match.group(0).replace(",", "")
+        for match in _NUMBER.finditer(_IDENTIFIER.sub("", sentence))
+    }
+
+
+def test_no_number_in_any_answer_is_left_without_rows_behind_it(seeded, alice):
+    """The brief's actual requirement, taken literally.
+
+    It is not enough for the headline figure to be cited. A sentence like
+    "the total across 4 of the 7 exceptions" states three numbers, and the
+    row counts are as much a claim about the data as the money is. So every
+    number the answer mentions has to correspond to a figure, and every
+    figure carries its rows. Figures that exist only to back a count like
+    that are marked role="context".
+    """
+    for question in ANSWERABLE_QUESTIONS:
+        body = ask(alice, question)
+        backed = set()
+        for figure in body["figures"]:
+            value = str(figure["value"])
+            backed.add(value.replace(",", ""))
+            try:
+                backed.add(f"{float(value):.2f}")
+                backed.add(str(int(float(value))))
+            except ValueError:
+                pass
+        labels = [figure["label"] for figure in body["figures"]]
+        unbacked = _numbers_in(body["answer"] or "", labels) - backed
+        assert not unbacked, (
+            f"{question!r} states {sorted(unbacked)} with no figure behind them. "
+            f"Answer was: {body['answer']}"
+        )
 
 
 def test_a_counts_citations_match_the_database_exactly(seeded, alice):
@@ -150,10 +203,13 @@ def test_a_breakdown_labels_its_groups_in_english_not_in_reason_codes(seeded, al
     codes = {c["reason_code"] for f in body["figures"] for c in f["citations"]}
     assert "ADJUSTMENT_MISSING_IN_SYSTEM_B" in codes
 
-    total = sum(figure["value"] for figure in body["figures"])
-    assert total == 7
-    for figure in body["figures"]:
+    groups = [figure for figure in body["figures"] if figure["role"] == "breakdown"]
+    assert sum(figure["value"] for figure in groups) == 7
+    for figure in groups:
         assert len(figure["citations"]) == figure["value"]
+    # Plus one context figure backing the "7 exceptions" the sentence leads on.
+    context = [figure for figure in body["figures"] if figure["role"] == "context"]
+    assert [(f["label"], f["value"]) for f in context] == [("Matching exceptions", 7)]
 
 
 def test_the_largest_difference_names_the_record_it_came_from(seeded, alice):
