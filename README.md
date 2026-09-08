@@ -38,7 +38,7 @@ and `make reset` drops and rebuilds the database from scratch.
 ### Test it
 
 ```bash
-make test                 # 191 tests
+make test                 # 192 tests
 make prove-isolation      # the tenant boundary suite, passing
 make prove-isolation-broken   # the same suite with the database protection removed
 make rls-status           # ask Postgres directly what the boundary is
@@ -53,7 +53,7 @@ the brief asks to see.
 
 **Ingest and reconcile.** `manage.py ingest` reads the three CSVs, matches
 System A records to System B entries on a normalised `record_ref`, and
-classifies what is left over into eleven reason codes. Eight of them occur in
+classifies what is left over into eleven reason codes. Nine of them occur in
 the supplied data:
 
 | # | Reason code | What the reader is told |
@@ -68,11 +68,13 @@ the supplied data:
 | 1 | `LOCATION_MISMATCH` | REC-1077 — and the two locations are in *different orgs* |
 | 1 | `VOIDED_RECORD_STILL_IN_SYSTEM_B` | REC-1019 — voided in System A, still live in System B |
 
-Twelve exceptions: seven for ORG-A, five for ORG-B. The remaining three codes
-(`UNREADABLE_REFERENCE_IN_SYSTEM_B`, `SPLIT_ENTRIES_DO_NOT_ADD_UP`,
-`AMOUNT_MISSING_IN_SYSTEM_B` on multi-entry records) do not occur here and are
-tested against synthetic rows in `tests/test_engine_edge_cases.py`, because a
-reason code I could not demonstrate would be dead code.
+Twelve exceptions: seven for ORG-A, five for ORG-B. The other two codes,
+`UNREADABLE_REFERENCE_IN_SYSTEM_B` and `SPLIT_ENTRIES_DO_NOT_ADD_UP`, do not
+occur here and are tested against synthetic rows in
+`tests/test_engine_edge_cases.py`, because a reason code I could not
+demonstrate would be dead code.
+`test_the_dataset_exercises_every_reason_code_except_the_two_we_know_it_cannot`
+pins that split, so this table cannot quietly go stale.
 
 **The disagreements that are not errors.** Five, deliberately absent from every
 exceptions list and published on `/api/summary` and at the bottom of the UI so
@@ -191,7 +193,7 @@ a keyword answer would reasonably believe a model had read their question.
   120 rows that is correct; for a real export you would want change detection
   and an append-only exception history so that "this appeared on Tuesday" is
   answerable.
-- **Automated frontend tests.** The backend has 191; the frontend has none.
+- **Automated frontend tests.** The backend has 192; the frontend has none.
   With the API this thoroughly tested and the UI this thin, I judged the next
   hour was better spent on the isolation suite. I verified the UI by hand
   (both orgs, every filter, both refusal paths).
@@ -237,7 +239,7 @@ the real CSVs, and read as a specification while doing it.
 |---|---:|---|
 | `test_tenant_isolation.py` | 21 | the boundary, attacked from every angle I could think of |
 | `test_engine_edge_cases.py` | 48 | normalisation, and the classes the CSVs do not contain |
-| `test_reconciliation_golden.py` | 16 | the exact expected output for the supplied data |
+| `test_reconciliation_golden.py` | 17 | the exact expected output for the supplied data |
 | `test_api.py` | 21 | auth, the list, filters, detail, idempotent ingest |
 | `test_grounded_answers.py` | 69 | citations, refusals, and hostile planner output |
 | `test_llm_planner_transport.py` | 16 | the LLM call itself, against a fake OpenAI server on localhost |

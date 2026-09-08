@@ -95,6 +95,31 @@ def test_exactly_the_expected_exceptions_are_reported(result):
     assert not spurious, f"false positives the engine reported: {sorted(spurious)}"
 
 
+def test_the_dataset_exercises_every_reason_code_except_the_two_we_know_it_cannot(result):
+    """No dead reason codes, and no undocumented ones.
+
+    A code that never fires anywhere is a claim in the README rather than a
+    feature, so each of the eleven has to be demonstrated either here against
+    the real CSVs or in test_engine_edge_cases.py against synthetic rows. This
+    test pins which are which, so adding a code without exercising it fails
+    rather than quietly padding the catalogue.
+    """
+    outcome, _ = result
+    fired = {x.reason_code for x in outcome.exceptions}
+    declared = {code.code for code in rc.REASON_CODES}
+
+    # These two cannot occur in the supplied data: every System B reference
+    # resolves to exactly one record number, and the only split record adds
+    # up. Both are covered in test_engine_edge_cases.py.
+    covered_synthetically = {
+        rc.UNREADABLE_REFERENCE_IN_SYSTEM_B,
+        rc.SPLIT_ENTRIES_DO_NOT_ADD_UP,
+    }
+
+    assert fired == declared - covered_synthetically
+    assert len(fired) == 9, "the README table lists nine codes for this dataset"
+
+
 def test_one_exception_per_record_and_reason(result):
     outcome, _ = result
     keys = [(x.record_ref, x.reason_code, x.org_id) for x in outcome.exceptions]
