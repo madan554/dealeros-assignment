@@ -130,8 +130,8 @@ make prove-isolation
 
 ```
 == Boundary in place: these should pass ==
-.....................                                                   [100%]
-21 passed
+......................                                                   [100%]
+22 passed
 ```
 
 Twenty-two tests. They attack the boundary the ways a leak actually happens
@@ -182,11 +182,12 @@ FAILED tests/test_tenant_isolation.py::test_cannot_update_a_row_into_another_org
 FAILED tests/test_tenant_isolation.py::test_deletes_cannot_reach_across_the_boundary
 FAILED tests/test_tenant_isolation.py::test_the_cross_org_location_mismatch_is_visible_only_to_the_owning_org
 FAILED tests/test_tenant_isolation.py::test_the_api_will_not_serve_another_orgs_exception
+FAILED tests/test_tenant_isolation.py::test_summary_does_not_publish_global_ingest_stats
 FAILED tests/test_tenant_isolation.py::test_query_parameters_cannot_be_used_to_reach_the_other_org
 FAILED tests/test_tenant_isolation.py::test_the_database_protection_is_the_thing_doing_the_work
 FAILED tests/test_tenant_isolation.py::test_a_table_with_row_level_security_but_no_policy_denies_everything
 FAILED tests/test_tenant_isolation.py::test_forcing_is_what_makes_the_policy_apply_to_django
-16 failed, 5 passed
+17 failed, 5 passed
 ```
 
 **Not one line of application code changed between 3a and 3b.** The only
@@ -210,7 +211,7 @@ make prove-isolation
 ```
 
 ```
-21 passed
+22 passed
 ```
 
 ### 3d. The same thing inside a single test
@@ -409,5 +410,5 @@ make test
 ```
 
 ```
-192 passed
+194 passed
 ```
